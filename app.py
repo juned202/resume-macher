@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-import PyPDF2
+import fitz  # PyMuPDF
 import docx
 import spacy
 from io import BytesIO
@@ -12,7 +12,7 @@ app = Flask(__name__)
 nlp = spacy.load('en_core_web_sm')
 
 def extract_text_from_pdf(file):
-    doc = PyPDF2.open(stream=file.read(), filetype="pdf")
+    doc = fitz.open(stream=file.read(), filetype="pdf")
     text = ""
     for page in doc:
         text += page.get_text()

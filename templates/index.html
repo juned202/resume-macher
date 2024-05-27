@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resume and Job Description Matcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Unlocking Your Potential: Resume and Job Description Matcher</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="resume">Resume:</label>
+            <input type="file" id="resume" name="resume" accept=".pdf,.docx" required><br><br>
+            <label for="jobDescription">Job Description:</label>
+            <input type="file" id="jobDescription" name="jobDescription" accept=".pdf,.docx" required><br><br>
+            <button type="submit">Submit</button>
+        </form>
+        <h2>Match Percentage:</h2>
+        <p id="matchPercentage"></p>
+        <h2>Missing Keywords:</h2>
+        <ul id="missingKeywords"></ul>
+        <div id="paginationControls" class="hidden">
+            <button id="prevPage" class="hidden">Previous</button>
+            <button id="nextPage" class="hidden">Next</button>
+        </div>
+        <button id="tryAgain" class="hidden">Try Again</button>
+    </div>
+    
+    <script>
+        let globalResult = null;
+        let currentPage = 1;
+        const keywordsPerPage = 10;
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            let formData = new FormData();
+            formData.append('resume', document.getElementById('resume').files[0]);
+            formData.append('jobDescription', document.getElementById('jobDescription').files[0]);
+            
+            let response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            let result = await response.json();
+            globalResult = result.missing_keywords; // Store the result in a global variable
+            currentPage = 1; // Reset to first page
+            
+            document.getElementById('matchPercentage').textContent = `Match Percentage: ${result.match_percentage.toFixed(2)}%`;
+            
+            updatePagination();
+            document.getElementById('uploadForm').classList.add('hidden');
+            document.getElementById('tryAgain').classList.remove('hidden');
+            document.getElementById('paginationControls').classList.remove('hidden');
+        });
+
+        document.getElementById('prevPage').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', function() {
+            if (currentPage * keywordsPerPage < globalResult.length) {
+                currentPage++;
+                updatePagination();
+            }
+        });
+
+        document.getElementById('tryAgain').addEventListener('click', function() {
+            document.getElementById('uploadForm').reset();
+            document.getElementById('matchPercentage').textContent = '';
+            document.getElementById('missingKeywords').innerHTML = '';
+            document.getElementById('uploadForm').classList.remove('hidden');
+            document.getElementById('paginationControls').classList.add('hidden');
+            document.getElementById('tryAgain').classList.add('hidden');
+            globalResult = null; // Reset the global result
+            currentPage = 1; // Reset to first page
+        });
+
+        function updatePagination() {
+            const missingKeywordsList = document.getElementById('missingKeywords');
+            missingKeywordsList.innerHTML = '';
+
+            const start = (currentPage - 1) * keywordsPerPage;
+            const end = start + keywordsPerPage;
+            const keywordsToShow = globalResult.slice(start, end);
+
+            keywordsToShow.forEach(keyword => {
+                let li = document.createElement('li');
+                li.textContent = keyword;
+                missingKeywordsList.appendChild(li);
+            });
+
+            document.getElementById('prevPage').classList.toggle('hidden', currentPage === 1);
+            document.getElementById('nextPage').classList.toggle('hidden', end >= globalResult.length);
+        }
+    </script>
+</body>
+</html>

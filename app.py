@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, make_response
 import fitz  # PyMuPDF
 import docx
 import spacy
@@ -46,6 +46,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
+  try:
     resume = request.files['resume']
     job_description = request.files['jobDescription']
     
@@ -70,6 +71,9 @@ def upload_files():
         'missing_keywords': list(missing_keywords),
         'match_percentage': match_percentage
     })
+
+  except Exception as e:
+         return make_response(jsonify({'error': str(e)}), 500)
 
 if __name__ == '__main__':
     app.run(debug=False,host='0.0.0.0')
